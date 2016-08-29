@@ -1,0 +1,1 @@
+(C) api for storing already compressed bobs ... i.e. receive compressed data, store as-is, decompress to use
