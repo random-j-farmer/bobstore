@@ -57,7 +57,7 @@ func OpenRW(name string) (*DB, error) {
 		return nil, errors.Wrap(err, "openfile failed")
 	}
 
-	err = LockFile(wn, db.writer)
+	err = lockFile(wn, db.writer)
 	if err != nil {
 		db.Close()
 		return nil, errors.Wrap(err, "LockFile failed")
@@ -81,7 +81,7 @@ func (db *DB) Close() (xerr error) {
 	// but return at least one error if any happen
 	if db.writer != nil {
 		wn := filepath.Join(db.name, writePosFile)
-		err := UnlockFile(wn, db.writer)
+		err := unlockFile(wn, db.writer)
 		if err != nil {
 			xerr = err
 		}

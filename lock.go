@@ -14,8 +14,8 @@ var (
 	rwlNames = make(map[string]bool)
 )
 
-// LockFile exclusively lock the file, also in process
-func LockFile(name string, f *os.File) error {
+// LockFile exclusively locks the file, also in process
+func lockFile(name string, f *os.File) error {
 	rwl.Lock()
 	defer rwl.Unlock()
 
@@ -35,8 +35,8 @@ func LockFile(name string, f *os.File) error {
 	return syscall.FcntlFlock(f.Fd(), syscall.F_SETLK, fcntlLock)
 }
 
-// UnlockFile unlock the file
-func UnlockFile(name string, f *os.File) error {
+// UnlockFile - unlock the file
+func unlockFile(name string, f *os.File) error {
 	rwl.Lock()
 	defer rwl.Unlock()
 
