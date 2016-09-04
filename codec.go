@@ -61,7 +61,7 @@ func encodeSnappy(src []byte) ([]byte, error) {
 }
 
 func decodeSnappy(src []byte) ([]byte, error) {
-	dst, err := snappy.Decode(make([]byte, len(src)*4), src)
+	dst, err := snappy.Decode(make([]byte, len(src)*8), src)
 	if err != nil {
 		return nil, errors.Wrapf(err, "snappy.Decode")
 	}
@@ -85,6 +85,11 @@ var codecs = make(map[string]*Codec)
 func init() {
 	codecs["SNAP"] = snappyCodec
 	codecs["GZIP"] = gzipCodec
+}
+
+// CodecFor returns the codec for name
+func CodecFor(name string) *Codec {
+	return codecs[name]
 }
 
 // SnappyCodec - snapy codec

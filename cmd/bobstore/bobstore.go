@@ -11,6 +11,7 @@ func main() {
 bobstore ls DB
 bobstore show DB 00000:00000000
 bobstore gzip SRCDB DSTDB
+bobstore snap SRCDB DSTDB
 `)
 	}
 
@@ -31,45 +32,60 @@ bobstore gzip SRCDB DSTDB
 			log.Fatalf("cursor.next: %v", cursor.Error())
 		}
 	} else if cmd == "show" {
-		ref, err := bobstore.ParseRef(os.Args[3])
+		var ref bobstore.Ref
+		ref, err = bobstore.ParseRef(os.Args[3])
 		if err != nil {
 			log.Fatalf("can not parse ref: %s", os.Args[3])
 		}
 
-		blob, err := db.Read(ref)
+		var blob []byte
+		blob, err = db.Read(ref)
 		if err != nil {
 			log.Fatalf("can not read ref %s: %v", ref, err)
 		}
 
 		fmt.Printf("%s", blob)
 	} else if cmd == "gzip" {
-		dstDB, err := bobstore.OpenRW(os.Args[3])
-		defer dstDB.Close()
-
+		err = copyDB(db, os.Args[3], "GZIP")
 		if err != nil {
-			log.Fatalf("bobstore.OpenRW %v", err)
+			log.Fatalf("copy error: %v", err)
 		}
-
-		cursor := db.Cursor(bobstore.Ref{})
-		gzCodec := bobstore.GZIPCodec()
-		for cursor.Next() {
-			fmt.Printf("%s\n", cursor.Ref())
-			b, err := db.Read(cursor.Ref())
-			if err != nil {
-				log.Printf("error reading %s: %v", cursor.Ref(), err)
-			}
-
-			ref2, err := dstDB.WriteWithCodec(b, gzCodec)
-			if err != nil {
-				log.Printf("error writing %s: %v", cursor.Ref(), err)
-			}
-			fmt.Printf("new ref: %s\n", ref2)
+	} else if cmd == "snap" {
+		err = copyDB(db, os.Args[3], "SNAP")
+		if err != nil {
+			log.Fatalf("copy error: %v", err)
 		}
-		if cursor.Error() != nil {
-			log.Fatalf("cursor.next: %v", cursor.Error())
-		}
-
 	} else {
 		log.Fatalf("unknown command %s", cmd)
 	}
+}
+
+func copyDB(db *bobstore.DB, dst, codec string) error {
+	dstDB, err := bobstore.OpenRW(dst)
+	defer dstDB.Close()
+
+	if err != nil {
+		log.Fatalf("bobstore.OpenRW %s: %v", dst, err)
+	}
+
+	cursor := db.Cursor(bobstore.Ref{})
+	gzCodec := bobstore.CodecFor(codec)
+	for cursor.Next() {
+		fmt.Printf("%s\n", cursor.Ref())
+		b, err := db.Read(cursor.Ref())
+		if err != nil {
+			log.Printf("error reading %s: %v", cursor.Ref(), err)
+		}
+
+		ref2, err := dstDB.WriteWithCodec(b, gzCodec)
+		if err != nil {
+			log.Printf("error writing %s: %v", cursor.Ref(), err)
+		}
+		fmt.Printf("new ref: %s\n", ref2)
+	}
+	if cursor.Error() != nil {
+		log.Fatalf("cursor.next: %v", cursor.Error())
+	}
+
+	return nil
 }
