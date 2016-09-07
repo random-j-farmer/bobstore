@@ -4,6 +4,7 @@ import "fmt"
 import "os"
 import "log"
 import "github.com/random-j-farmer/bobstore"
+import "encoding/json"
 
 func main() {
 	if len(os.Args) == 1 {
@@ -12,6 +13,7 @@ bobstore ls DB
 bobstore show DB 00000:00000000
 bobstore gzip SRCDB DSTDB
 bobstore snap SRCDB DSTDB
+bobstore json SRCDB
 `)
 	}
 
@@ -55,6 +57,11 @@ bobstore snap SRCDB DSTDB
 		if err != nil {
 			log.Fatalf("copy error: %v", err)
 		}
+	} else if cmd == "json" {
+		err = exportJSON(db)
+		if err != nil {
+			log.Fatalf("json error: %v", err)
+		}
 	} else {
 		log.Fatalf("unknown command %s", cmd)
 	}
@@ -82,6 +89,37 @@ func copyDB(db *bobstore.DB, dst, codec string) error {
 			log.Printf("error writing %s: %v", cursor.Ref(), err)
 		}
 		fmt.Printf("new ref: %s\n", ref2)
+	}
+	if cursor.Error() != nil {
+		log.Fatalf("cursor.next: %v", cursor.Error())
+	}
+
+	return nil
+}
+
+func exportJSON(db *bobstore.DB) error {
+	cursor := db.Cursor(bobstore.Ref{})
+	for cursor.Next() {
+		b, err := db.Read(cursor.Ref())
+		if err != nil {
+			log.Fatalf("db.Read: %v", err)
+		}
+		var js interface{}
+		err = json.Unmarshal(b, &js)
+		if err != nil {
+			log.Fatalf("json.Unmarshal: %v", err)
+		}
+
+		switch js := js.(type) {
+		case map[string]interface{}:
+			js["BobstoreRef"] = cursor.Ref().String()
+		}
+
+		marsh, err := json.Marshal(js)
+		if err != nil {
+			log.Fatalf("json.Marshal: %v", err)
+		}
+		fmt.Printf("%s\n", marsh)
 	}
 	if cursor.Error() != nil {
 		log.Fatalf("cursor.next: %v", cursor.Error())
