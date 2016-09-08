@@ -79,12 +79,12 @@ func (c *Cursor) Next() bool {
 	_, err = f.ReadAt(hb[:], int64(c.next.Pos))
 	// handle switch to next file
 	if err == io.EOF {
-		if hasFile(c.db, c.next.Fno+1) {
-			c.next.Fno++
-			c.next.Pos = 0
-			return c.Next()
+		if _, err2 := getFile(c.db, c.next.Fno+1); err2 != nil {
+			return false
 		}
-		return false
+		c.next.Fno++
+		c.next.Pos = 0
+		return c.Next()
 	}
 	if err != nil {
 		c.err = err

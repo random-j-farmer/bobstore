@@ -8,29 +8,34 @@ import (
 	"testing"
 )
 
+var testName string
+
+func init() {
+	var err error
+	testName, err = ioutil.TempDir("", "bobs")
+	if err != nil {
+		panic("can not create test directory")
+	}
+}
+
 var testDB *DB
 
-func TestMain(m *testing.M) {
-	var rc = 0
-	func() {
-		name, err := ioutil.TempDir("", "bobs")
-		if err != nil {
-			panic("can not open test directory")
-		}
+func openTestDB() {
+	var err error
+	testDB, err = OpenRW(testName)
+	if err != nil {
+		log.Panicf("can not open test db: %v %v", testName, err)
+	}
+}
 
-		testDB, err = OpenRW(name)
-		if err != nil {
-			log.Panicf("can not open test db: %s %v", name, err)
-		}
-		defer testDB.Close()
-
-		rc = m.Run()
-	}()
-
-	os.Exit(rc)
+func closeTestDB() {
+	testDB.Close()
 }
 
 func Test_OpenRW(t *testing.T) {
+	openTestDB()
+	defer closeTestDB()
+
 	db, err := OpenRW(testDB.name)
 	if err == nil {
 		t.Errorf("could open same db twice")
@@ -39,6 +44,9 @@ func Test_OpenRW(t *testing.T) {
 }
 
 func Test_Open(t *testing.T) {
+	openTestDB()
+	defer closeTestDB()
+
 	db, err := Open(testDB.name)
 	if err != nil {
 		// NOTE: you should not open the same db twice in the same process
@@ -50,6 +58,9 @@ func Test_Open(t *testing.T) {
 }
 
 func Test_Write(t *testing.T) {
+	openTestDB()
+	defer closeTestDB()
+
 	blob := "i am a little blob and i am ok"
 	ref, err := testDB.Write([]byte(blob))
 	if err != nil {
@@ -90,6 +101,9 @@ func Test_Write(t *testing.T) {
 }
 
 func Test_Cursor(t *testing.T) {
+	openTestDB()
+	defer closeTestDB()
+
 	c := testDB.Cursor(Ref{})
 	cnt := 0
 	for c.Next() {

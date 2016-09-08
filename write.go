@@ -127,13 +127,6 @@ func getFile(db *DB, fno uint16) (*os.File, error) {
 	return xGetFile(db, fno)
 }
 
-func hasFile(db *DB, fno uint16) bool {
-	db.lock.Lock()
-	_, ok := db.files[fno]
-	defer db.lock.Unlock()
-	return ok
-}
-
 // x means mutex is acquired
 func xGetFile(db *DB, fno uint16) (*os.File, error) {
 	if f := db.files[fno]; f != nil {

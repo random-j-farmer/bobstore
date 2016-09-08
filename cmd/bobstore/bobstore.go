@@ -5,6 +5,7 @@ import "os"
 import "log"
 import "github.com/random-j-farmer/bobstore"
 import "encoding/json"
+import "crypto/sha1"
 
 func main() {
 	if len(os.Args) == 1 {
@@ -110,12 +111,12 @@ func exportJSON(db *bobstore.DB) error {
 			log.Fatalf("json.Unmarshal: %v", err)
 		}
 
-		switch js := js.(type) {
-		case map[string]interface{}:
-			js["BobstoreRef"] = cursor.Ref().String()
-		}
+		m := make(map[string]interface{})
+		m["stored"] = js
+		m["ref"] = cursor.Ref().String()
+		m["sha1"] = fmt.Sprintf("%0x", sha1.Sum(b))
 
-		marsh, err := json.Marshal(js)
+		marsh, err := json.Marshal(m)
 		if err != nil {
 			log.Fatalf("json.Marshal: %v", err)
 		}

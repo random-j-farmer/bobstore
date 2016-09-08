@@ -1,1 +1,4 @@
 (C) api for storing already compressed bobs ... i.e. receive compressed data, store as-is, decompress to use
+(C) use mmap
+x (A) json export: log sha1 for duplicate detection
+x (A) verify file switching works when reaching the file size limit (1G)
