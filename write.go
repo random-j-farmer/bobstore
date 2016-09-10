@@ -38,6 +38,24 @@ type header struct {
 
 type headerBytes [headerSize]byte
 
+// WritePosition gives the current write position (where the next write would be)
+// only implemented if opened read-write
+func (db *DB) WritePosition() (ref Ref, err error) {
+
+	if db.writer == nil {
+		// opened for read, write pos file gets constantly written
+		// currently, we only give out this information if the bobstore is
+		// opened for write
+		err = fmt.Errorf("opened read-only")
+		return // named return
+	}
+
+	db.lock.Lock()
+	ref = db.writePos
+	db.lock.Unlock()
+	return // named return
+}
+
 // Write to the database.  Will use the default SnappyCodec()
 func (db *DB) Write(b []byte) (Ref, error) {
 	return db.WriteWithCodec(b, snappyCodec)
